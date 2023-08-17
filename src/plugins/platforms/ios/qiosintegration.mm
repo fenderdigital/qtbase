@@ -178,6 +178,8 @@ bool QIOSIntegration::hasCapability(Capability cap) const
         return false;
     case ApplicationState:
         return true;
+    case ForeignWindows:
+        return true;
     default:
         return QPlatformIntegration::hasCapability(cap);
     }
@@ -186,6 +188,11 @@ bool QIOSIntegration::hasCapability(Capability cap) const
 QPlatformWindow *QIOSIntegration::createPlatformWindow(QWindow *window) const
 {
     return new QIOSWindow(window);
+}
+
+QPlatformWindow *QIOSIntegration::createForeignWindow(QWindow *window, WId nativeHandle) const
+{
+    return new QIOSWindow(window, nativeHandle);
 }
 
 // Used when the QWindow's surface type is set by the client to QSurface::RasterSurface
