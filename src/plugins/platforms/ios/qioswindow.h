@@ -98,6 +98,8 @@ public:
     CAEAGLLayer *eaglLayer() const;
 #endif
 
+    bool isForeignWindow() const override;
+
 private:
     void applicationStateChanged(Qt::ApplicationState state);
     void applyGeometry(const QRect &rect);
