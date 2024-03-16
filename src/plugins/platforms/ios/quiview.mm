@@ -711,11 +711,6 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
     return nil;
 }
 
-- (UIEdgeInsets)qt_safeAreaInsets
-{
-    return self.safeAreaInsets;
-}
-
 @end
 
 #ifdef Q_OS_IOS
