@@ -56,13 +56,11 @@
 
 // -------------------------------------------------------------------------
 
-#if !defined(Q_OS_VISIONOS)
 static QUIView *focusView()
 {
     return qApp->focusWindow() ?
         reinterpret_cast<QUIView *>(qApp->focusWindow()->winId()) : 0;
 }
-#endif
 
 // -------------------------------------------------------------------------
 
@@ -339,11 +337,7 @@ QIOSInputContext::QIOSInputContext()
     , m_keyboardHideGesture([[QIOSKeyboardListener alloc] initWithQIOSInputContext:this])
     , m_textResponder(0)
 {
-    if (isQtApplication()) {
-        QIOSScreen *iosScreen = static_cast<QIOSScreen*>(QGuiApplication::primaryScreen()->handle());
-        [iosScreen->uiWindow() addGestureRecognizer:m_keyboardHideGesture];
-    }
-
+    Q_ASSERT(!qGuiApp->focusWindow());
     connect(qGuiApp, &QGuiApplication::focusWindowChanged, this, &QIOSInputContext::focusWindowChanged);
 }
 
@@ -646,11 +640,14 @@ void QIOSInputContext::setFocusObject(QObject *focusObject)
 
 void QIOSInputContext::focusWindowChanged(QWindow *focusWindow)
 {
-    Q_UNUSED(focusWindow);
-
     qImDebug() << "new focus window =" << focusWindow;
 
     reset();
+
+    if (isQtApplication()) {
+        [m_keyboardHideGesture.view removeGestureRecognizer:m_keyboardHideGesture];
+        [focusView().window addGestureRecognizer:m_keyboardHideGesture];
+    }
 
     // The keyboard rectangle depend on the focus window, so
     // we need to re-evaluate the keyboard state.
