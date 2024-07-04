@@ -287,7 +287,7 @@ void QIOSScreen::updateProperties()
 
 #if defined(Q_OS_VISIONOS)
     // Based on what iPad app reports
-    m_geometry = QRect(0, 0, 1194, 834);
+    m_geometry = QRectF::fromCGRect(rootViewForScreen(this).bounds).toRect();
     m_depth = 24;
 #else
     m_geometry = QRectF::fromCGRect(m_uiScreen.bounds).toRect();
@@ -509,7 +509,7 @@ QPixmap QIOSScreen::grabWindow(WId window, int x, int y, int width, int height) 
         return QPixmap();
 
     UIView *view = window ? reinterpret_cast<UIView *>(window)
-                          : rootViewForScreen(screen());
+                          : rootViewForScreen(this);
 
     if (width < 0)
         width = qMax(view.bounds.size.width - x, CGFloat(0));

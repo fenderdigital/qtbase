@@ -75,7 +75,7 @@ int infoPlistValue(NSString* key, int defaultValue);
 class QWindow;
 class QScreen;
 UIWindow *presentationWindow(QWindow *);
-UIView *rootViewForScreen(QScreen *);
+UIView *rootViewForScreen(const QPlatformScreen *);
 
 QT_END_NAMESPACE
 
