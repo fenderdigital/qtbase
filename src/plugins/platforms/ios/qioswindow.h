@@ -99,6 +99,7 @@ public:
 #endif
 
     bool isForeignWindow() const override;
+    UIView *view() const;
 
 private:
     void applicationStateChanged(Qt::ApplicationState state);
