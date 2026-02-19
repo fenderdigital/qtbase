@@ -281,7 +281,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
         // blocked by this guard.
         FirstResponderCandidate firstResponderCandidate(self);
 
-        qImDebug() << "self:" << self << "first:" << [UIResponder currentFirstResponder];
+        qImDebug() << "self:" << self << "first:" << [UIResponder qt_currentFirstResponder];
 
         if (![super becomeFirstResponder]) {
             qImDebug() << self << "was not allowed to become first responder";
@@ -320,7 +320,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
 - (BOOL)resignFirstResponder
 {
-    qImDebug() << "self:" << self << "first:" << [UIResponder currentFirstResponder];
+    qImDebug() << "self:" << self << "first:" << [UIResponder qt_currentFirstResponder];
 
     if (![super resignFirstResponder])
         return NO;
@@ -343,7 +343,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
     if ([self isFirstResponder])
         return YES;
 
-    UIResponder *firstResponder = [UIResponder currentFirstResponder];
+    UIResponder *firstResponder = [UIResponder qt_currentFirstResponder];
     if ([firstResponder isKindOfClass:[QIOSTextInputResponder class]]
         && [firstResponder nextResponder] == self)
         return YES;

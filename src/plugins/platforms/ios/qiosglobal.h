@@ -73,7 +73,7 @@ int infoPlistValue(NSString* key, int defaultValue);
 QT_END_NAMESPACE
 
 @interface UIResponder (QtFirstResponder)
-+ (id)currentFirstResponder;
++ (id)qt_currentFirstResponder;
 @end
 
 QT_BEGIN_NAMESPACE
