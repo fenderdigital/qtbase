@@ -57,7 +57,7 @@
 #import <QuartzCore/CAEAGLLayer.h>
 #endif
 
-#if QT_CONFIG(metal)
+#ifdef Q_OS_IOS
 #import <QuartzCore/CAMetalLayer.h>
 #endif
 
@@ -73,7 +73,7 @@ QIOSWindow::QIOSWindow(QWindow *window, WId nativeHandle)
         m_view = reinterpret_cast<UIView *>(nativeHandle);
         [m_view retain];
     } else {
-#if QT_CONFIG(metal)
+#ifdef Q_OS_IOS
         if (window->surfaceType() == QSurface::MetalSurface)
             m_view = [[QUIMetalView alloc] initWithQIOSWindow:this];
         else

@@ -715,7 +715,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
 @end
 
-#if QT_CONFIG(metal)
+#ifdef Q_OS_IOS
 @implementation QUIMetalView
 
 + (Class)layerClass
