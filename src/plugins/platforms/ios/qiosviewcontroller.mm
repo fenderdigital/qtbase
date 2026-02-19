@@ -120,6 +120,7 @@
 
 - (void)didAddSubview:(UIView *)subview
 {
+#if !defined(Q_OS_VISIONOS)
     Q_UNUSED(subview);
 
     QT_PREPEND_NAMESPACE(QIOSScreen) *screen = self.qtViewController.platformScreen;
@@ -135,10 +136,12 @@
         uiWindow.screen = screen->uiScreen();
         uiWindow.hidden = NO;
     }
+#endif
 }
 
 - (void)willRemoveSubview:(UIView *)subview
 {
+#if !defined(Q_OS_VISIONOS)
     Q_UNUSED(subview);
 
     Q_ASSERT(self.window);
@@ -153,6 +156,7 @@
             uiWindow.screen = [UIScreen mainScreen];
         });
     }
+#endif
 }
 
 - (void)layoutSubviews
@@ -314,7 +318,7 @@
 
     Q_ASSERT(!qt_apple_isApplicationExtension());
 
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
     [center addObserver:self selector:@selector(willChangeStatusBarFrame:)
             name:UIApplicationWillChangeStatusBarFrameNotification
@@ -336,7 +340,7 @@
 
 - (BOOL)shouldAutorotate
 {
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     return self.platformScreen && self.platformScreen->uiScreen() == [UIScreen mainScreen] && !self.lockedOrientation;
 #else
     return NO;
@@ -368,6 +372,7 @@
     [super didRotateFromInterfaceOrientation:orientation];
 }
 
+#if !defined(Q_OS_VISIONOS)
 - (void)willChangeStatusBarFrame:(NSNotification*)notification
 {
     Q_UNUSED(notification);
@@ -395,6 +400,7 @@
         [self.view layoutIfNeeded];
     }];
 }
+#endif
 
 - (void)didChangeStatusBarOrientation:(NSNotification *)notification
 {
@@ -431,10 +437,12 @@
     if (!self.platformScreen || !self.platformScreen->screen())
         return;
 
+#if !defined(Q_OS_VISIONOS)
     // For now we only care about the main screen, as both the statusbar
     // visibility and orientation is only appropriate for the main screen.
     if (self.platformScreen->uiScreen() != [UIScreen mainScreen])
         return;
+#endif
 
     // Prevent recursion caused by updating the status bar appearance (position
     // or visibility), which in turn may cause a layout of our subviews, and
@@ -461,7 +469,7 @@
     // All decisions are based on the top level window
     focusWindow = qt_window_private(focusWindow)->topLevelWindow();
 
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
 
     // -------------- Status bar style and visbility ---------------
 
