@@ -85,7 +85,10 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
 + (Class)layerClass
 {
+#if QT_CONFIG(opengl)
     return [CAEAGLLayer class];
+#endif
+    return [super layerClass];
 }
 
 - (instancetype)initWithQIOSWindow:(QT_PREPEND_NAMESPACE(QIOSWindow) *)window
@@ -101,6 +104,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 - (instancetype)initWithFrame:(CGRect)frame
 {
     if ((self = [super initWithFrame:frame])) {
+#if QT_CONFIG(opengl)
         if ([self.layer isKindOfClass:[CAEAGLLayer class]]) {
             // Set up EAGL layer
             CAEAGLLayer *eaglLayer = static_cast<CAEAGLLayer *>(self.layer);
@@ -110,6 +114,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
                 kEAGLDrawablePropertyColorFormat: kEAGLColorFormatRGBA8
             };
         }
+#endif
 
         if (isQtApplication())
             self.hidden = YES;

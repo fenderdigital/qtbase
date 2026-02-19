@@ -44,7 +44,6 @@
 #include "qiosbackingstore.h"
 #include "qiosscreen.h"
 #include "qiosplatformaccessibility.h"
-#include "qioscontext.h"
 #ifndef Q_OS_TVOS
 #include "qiosclipboard.h"
 #endif
@@ -62,6 +61,10 @@
 #include <QtClipboardSupport/private/qmacmime_p.h>
 #include <QDir>
 #include <QOperatingSystemVersion>
+
+#if QT_CONFIG(opengl)
+#include "qioscontext.h"
+#endif
 
 #import <AudioToolbox/AudioServices.h>
 
@@ -158,11 +161,15 @@ QIOSIntegration::~QIOSIntegration()
 bool QIOSIntegration::hasCapability(Capability cap) const
 {
     switch (cap) {
+#if QT_CONFIG(opengl)
     case BufferQueueingOpenGL:
         return true;
     case OpenGL:
     case ThreadedOpenGL:
         return true;
+    case RasterGLSurface:
+        return true;
+#endif
     case ThreadedPixmaps:
         return true;
     case MultipleWindows:
@@ -170,8 +177,6 @@ bool QIOSIntegration::hasCapability(Capability cap) const
     case WindowManagement:
         return false;
     case ApplicationState:
-        return true;
-    case RasterGLSurface:
         return true;
     default:
         return QPlatformIntegration::hasCapability(cap);
@@ -189,11 +194,13 @@ QPlatformBackingStore *QIOSIntegration::createPlatformBackingStore(QWindow *wind
     return new QIOSBackingStore(window);
 }
 
+#if QT_CONFIG(opengl)
 // Used when the QWindow's surface type is set by the client to QSurface::OpenGLSurface
 QPlatformOpenGLContext *QIOSIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
     return new QIOSContext(context);
 }
+#endif
 
 class QIOSOffscreenSurface : public QPlatformOffscreenSurface
 {

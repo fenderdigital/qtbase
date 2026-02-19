@@ -92,7 +92,9 @@ public:
 
     void requestUpdate() override;
 
+#if QT_CONFIG(opengl)
     CAEAGLLayer *eaglLayer() const;
+#endif
 
 private:
     void applicationStateChanged(Qt::ApplicationState state);

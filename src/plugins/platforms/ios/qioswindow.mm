@@ -40,7 +40,6 @@
 #include "qioswindow.h"
 
 #include "qiosapplicationdelegate.h"
-#include "qioscontext.h"
 #include "qiosglobal.h"
 #include "qiosintegration.h"
 #include "qiosscreen.h"
@@ -51,7 +50,10 @@
 #include <QtGui/private/qwindow_p.h>
 #include <qpa/qplatformintegration.h>
 
+#if QT_CONFIG(opengl)
 #import <QuartzCore/CAEAGLLayer.h>
+#endif
+
 #ifdef Q_OS_IOS
 #import <QuartzCore/CAMetalLayer.h>
 #endif
