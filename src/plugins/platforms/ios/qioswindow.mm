@@ -83,6 +83,9 @@ QIOSWindow::QIOSWindow(QWindow *window, WId nativeHandle)
 
     connect(qGuiApp, &QGuiApplication::applicationStateChanged, this, &QIOSWindow::applicationStateChanged);
 
+    // Always set parent, even if we don't have a parent window,
+    // as we use setParent to reparent top levels into our desktop
+    // manager view.
     setParent(QPlatformWindow::parent());
 
     if (!isForeignWindow()) {
@@ -328,10 +331,6 @@ void QIOSWindow::setWindowState(Qt::WindowStates state)
 
 void QIOSWindow::setParent(const QPlatformWindow *parentWindow)
 {
-    // UIView *parentView = parentWindow ? reinterpret_cast<UIView *>(parentWindow->winId())
-    //     : isQtApplication() ? static_cast<QIOSScreen *>(screen())->uiWindow().rootViewController.view : 0;
-
-    // [parentView addSubview:m_view];
     UIView *superview = nullptr;
     if (parentWindow)
         superview = reinterpret_cast<UIView *>(parentWindow->winId());
