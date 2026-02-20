@@ -41,6 +41,7 @@
 #include "qiosapplicationdelegate.h"
 #include "qiosviewcontroller.h"
 #include "qiosscreen.h"
+#include "quiwindow.h"
 
 #include <QtCore/private/qcore_mac_p.h>
 
@@ -162,9 +163,15 @@ UIView *rootViewForScreen(QScreen *screen)
         Q_UNUSED(iosScreen);
 #endif
 
-        UIWindow *uiWindow = windowScene.keyWindow;
-        if (!uiWindow && windowScene.windows.count)
-            uiWindow = windowScene.windows[0];
+        UIWindow *uiWindow = qt_objc_cast<QUIWindow*>(windowScene.keyWindow);
+        if (!uiWindow) {
+            for (UIWindow *win in windowScene.windows) {
+                if (qt_objc_cast<QUIWindow*>(win)) {
+                    uiWindow = win;
+                    break;
+                }
+            }
+        }
 
         return uiWindow.rootViewController.view;
     }
