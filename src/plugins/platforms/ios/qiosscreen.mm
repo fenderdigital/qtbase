@@ -303,8 +303,8 @@ void QIOSScreen::updateProperties()
 
 // #ifndef Q_OS_TVOS
 //     if (m_uiScreen == [UIScreen mainScreen]) {
-//         QIOSViewController *qtViewController = [m_uiWindow.rootViewController isKindOfClass:[QIOSViewController class]] ?
-//             static_cast<QIOSViewController *>(m_uiWindow.rootViewController) : nil;
+//         QIOSViewController *qtViewController = [view.window.rootViewController isKindOfClass:[QIOSViewController class]] ?
+//             static_cast<QIOSViewController *>(view.window.rootViewController) : nil;
 
 //         if (qtViewController.lockedOrientation) {
 //             Q_ASSERT(!qt_apple_isApplicationExtension());
