@@ -58,6 +58,7 @@
 // -------------------------------------------------------------------------
 
 @interface QIOSViewController ()
+@property (nonatomic, assign) UIWindow *window;
 @property (nonatomic, assign) QPointer<QT_PREPEND_NAMESPACE(QIOSScreen)> platformScreen;
 @property (nonatomic, assign) BOOL changingOrientation;
 @end
@@ -120,28 +121,25 @@
 
 - (void)didAddSubview:(UIView *)subview
 {
-#if !defined(Q_OS_VISIONOS)
     Q_UNUSED(subview);
 
-    QT_PREPEND_NAMESPACE(QIOSScreen) *screen = self.qtViewController.platformScreen;
-
-    // The 'window' property of our view is not valid until the window
-    // has been shown, so we have to access it through the QIOSScreen.
-    UIWindow *uiWindow = screen->uiWindow();
+    // Track UIWindow via explicit property on QIOSViewController,
+    // as the window property of our own view is not valid until
+    // the window has been shown (below).
+    UIWindow *uiWindow = self.qtViewController.window;
 
     if (uiWindow.hidden) {
-        // Associate UIWindow to screen and show it the first time a QWindow
-        // is mapped to the screen. For external screens this means disabling
-        // mirroring mode and presenting alternate content on the screen.
-        uiWindow.screen = screen->uiScreen();
+        // Show the UIWindow the first time a QWindow is mapped to the screen.
+        // For the main screen this hides the launch screen, while for external
+        // screens this disables mirroring of the main screen, so the external
+        // screen can be used for alternate content.
         uiWindow.hidden = NO;
     }
-#endif
 }
 
+#if !defined(Q_OS_VISIONOS)
 - (void)willRemoveSubview:(UIView *)subview
 {
-#if !defined(Q_OS_VISIONOS)
     Q_UNUSED(subview);
 
     Q_ASSERT(self.window);
@@ -153,11 +151,10 @@
         // to ensure that we don't try to layout the view that's being removed.
         dispatch_async(dispatch_get_main_queue(), ^{
             uiWindow.hidden = YES;
-            uiWindow.screen = [UIScreen mainScreen];
         });
     }
-#endif
 }
+#endif
 
 - (void)layoutSubviews
 {
@@ -263,9 +260,10 @@
 @synthesize preferredStatusBarStyle;
 #endif
 
-- (instancetype)initWithQIOSScreen:(QT_PREPEND_NAMESPACE(QIOSScreen) *)screen
+- (instancetype)initWithWindow:(UIWindow*)window andScreen:(QT_PREPEND_NAMESPACE(QIOSScreen) *)screen
 {
     if (self = [self init]) {
+        self.window = window;
         self.platformScreen = screen;
 
         self.changingOrientation = NO;
@@ -328,6 +326,15 @@
             name:UIApplicationDidChangeStatusBarOrientationNotification
             object:qt_apple_sharedApplication()];
 #endif
+
+    // Make sure any top level windows that have already been created
+    // for this screen are reparented into our desktop manager view.
+    for (auto *window : qGuiApp->topLevelWindows()) {
+        if (window->screen()->handle() != self.platformScreen)
+            continue;
+        if (auto *platformWindow = window->handle())
+            platformWindow->setParent(nullptr);
+    }
 }
 
 - (void)viewDidUnload

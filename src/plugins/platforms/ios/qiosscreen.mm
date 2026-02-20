@@ -250,21 +250,6 @@ QIOSScreen::QIOSScreen(UIScreen *screen)
         m_physicalDpi = 96;
     }
 
-    if (!qt_apple_isApplicationExtension()) {
-        for (UIWindow *existingWindow in qt_apple_sharedApplication().windows) {
-            if (existingWindow.screen == m_uiScreen) {
-                m_uiWindow = [existingWindow retain];
-                break;
-            }
-        }
-
-        if (!m_uiWindow) {
-            // Create a window and associated view-controller that we can use
-            m_uiWindow = [[QUIWindow alloc] initWithFrame:[m_uiScreen bounds]];
-            m_uiWindow.rootViewController = [[[QIOSViewController alloc] initWithQIOSScreen:this] autorelease];
-        }
-    }
-
     m_displayLink = [m_uiScreen displayLinkWithBlock:^(CADisplayLink *) { deliverUpdateRequests(); }];
     m_displayLink.paused = YES; // Enabled when clients call QWindow::requestUpdate()
     [m_displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSDefaultRunLoopMode];
@@ -279,7 +264,6 @@ QIOSScreen::~QIOSScreen()
     [m_displayLink invalidate];
 
     [m_orientationListener release];
-    [m_uiWindow release];
 }
 
 QString QIOSScreen::name() const
@@ -308,30 +292,30 @@ void QIOSScreen::updateProperties()
 #else
     m_geometry = QRectF::fromCGRect(m_uiScreen.bounds).toRect();
 
-#ifndef Q_OS_TVOS
-    if (m_uiScreen == [UIScreen mainScreen]) {
-        QIOSViewController *qtViewController = [m_uiWindow.rootViewController isKindOfClass:[QIOSViewController class]] ?
-            static_cast<QIOSViewController *>(m_uiWindow.rootViewController) : nil;
+// #ifndef Q_OS_TVOS
+//     if (m_uiScreen == [UIScreen mainScreen]) {
+//         QIOSViewController *qtViewController = [m_uiWindow.rootViewController isKindOfClass:[QIOSViewController class]] ?
+//             static_cast<QIOSViewController *>(m_uiWindow.rootViewController) : nil;
 
-        if (qtViewController.lockedOrientation) {
-            Q_ASSERT(!qt_apple_isApplicationExtension());
+//         if (qtViewController.lockedOrientation) {
+//             Q_ASSERT(!qt_apple_isApplicationExtension());
 
-            // Setting the statusbar orientation (content orientation) on will affect the screen geometry,
-            // which is not what we want. We want to reflect the screen geometry based on the locked orientation,
-            // and adjust the available geometry based on the repositioned status bar for the current status
-            // bar orientation.
+//             // Setting the statusbar orientation (content orientation) on will affect the screen geometry,
+//             // which is not what we want. We want to reflect the screen geometry based on the locked orientation,
+//             // and adjust the available geometry based on the repositioned status bar for the current status
+//             // bar orientation.
 
-            Qt::ScreenOrientation statusBarOrientation = toQtScreenOrientation(
-                UIDeviceOrientation(qt_apple_sharedApplication().statusBarOrientation));
+//             Qt::ScreenOrientation statusBarOrientation = toQtScreenOrientation(
+//                 UIDeviceOrientation(qt_apple_sharedApplication().statusBarOrientation));
 
-            Qt::ScreenOrientation lockedOrientation = toQtScreenOrientation(UIDeviceOrientation(qtViewController.lockedOrientation));
-            QTransform transform = transformBetween(lockedOrientation, statusBarOrientation, m_geometry).inverted();
+//             Qt::ScreenOrientation lockedOrientation = toQtScreenOrientation(UIDeviceOrientation(qtViewController.lockedOrientation));
+//             QTransform transform = transformBetween(lockedOrientation, statusBarOrientation, m_geometry).inverted();
 
-            m_geometry = transform.mapRect(m_geometry);
-            m_availableGeometry = transform.mapRect(m_availableGeometry);
-        }
-    }
-#endif
+//             m_geometry = transform.mapRect(m_geometry);
+//             m_availableGeometry = transform.mapRect(m_availableGeometry);
+//         }
+//     }
+// #endif
 
     if (m_geometry != previousGeometry) {
         // We can't use the primaryOrientation of screen(), as we haven't reported the new geometry yet
@@ -524,7 +508,8 @@ QPixmap QIOSScreen::grabWindow(WId window, int x, int y, int width, int height) 
     if (window && ![reinterpret_cast<id>(window) isKindOfClass:[UIView class]])
         return QPixmap();
 
-    UIView *view = window ? reinterpret_cast<UIView *>(window) : m_uiWindow.rootViewController.view;
+    UIView *view = window ? reinterpret_cast<UIView *>(window)
+                          : rootViewForScreen(screen());
 
     if (width < 0)
         width = qMax(view.bounds.size.width - x, CGFloat(0));
@@ -557,11 +542,6 @@ UIScreen *QIOSScreen::uiScreen() const
     return m_uiScreen;
 }
 #endif
-
-UIWindow *QIOSScreen::uiWindow() const
-{
-    return m_uiWindow;
-}
 
 #include "moc_qiosscreen.cpp"
 

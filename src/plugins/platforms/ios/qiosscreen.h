@@ -80,7 +80,6 @@ public:
 #if !defined(Q_OS_VISIONOS)
     UIScreen *uiScreen() const;
 #endif
-    UIWindow *uiWindow() const;
 
     void setUpdatesPaused(bool);
 
@@ -92,7 +91,6 @@ private:
 #if !defined(Q_OS_VISIONOS)
     UIScreen *m_uiScreen = nullptr;
 #endif
-    UIWindow *m_uiWindow = nullptr;
     QRect m_geometry;
     QRect m_availableGeometry;
     int m_depth;

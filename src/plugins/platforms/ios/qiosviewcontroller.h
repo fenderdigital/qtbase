@@ -48,7 +48,7 @@ QT_END_NAMESPACE
 
 @interface QIOSViewController : UIViewController
 
-- (instancetype)initWithQIOSScreen:(QT_PREPEND_NAMESPACE(QIOSScreen) *)screen;
+- (instancetype)initWithWindow:(UIWindow*)window andScreen:(QT_PREPEND_NAMESPACE(QIOSScreen) *)screen;
 - (void)updateProperties;
 
 #ifndef Q_OS_TVOS
