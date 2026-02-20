@@ -60,6 +60,7 @@
 #if !defined(Q_OS_TVOS)
 #include "qiosfiledialog.h"
 #include "qiosmessagedialog.h"
+#include "quiwindow.h"
 #endif
 
 QT_BEGIN_NAMESPACE

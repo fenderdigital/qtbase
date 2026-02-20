@@ -46,6 +46,7 @@
 #include "qiosviewcontroller.h"
 #include "quiview.h"
 #include "qiostheme.h"
+#include "quiwindow.h"
 
 #include <QtCore/private/qcore_mac_p.h>
 
@@ -183,46 +184,6 @@ static QIOSScreen* qtPlatformScreenFor(UIScreen *uiScreen)
 @end
 
 #endif // !defined(Q_OS_VISIONOS)
-
-// -------------------------------------------------------------------------
-
-@implementation QUIWindow
-
-- (instancetype)initWithFrame:(CGRect)frame
-{
-    if ((self = [super initWithFrame:frame]))
-        self->_sendingEvent = NO;
-
-    return self;
-}
-
-- (void)sendEvent:(UIEvent *)event
-{
-    QScopedValueRollback<BOOL> sendingEvent(self->_sendingEvent, YES);
-    [super sendEvent:event];
-}
-
-#if !defined(Q_OS_VISIONOS)
-- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection
-{
-    [super traitCollectionDidChange:previousTraitCollection];
-
-    if (!qGuiApp)
-        return;
-
-    if (@available(iOS 12, *)) {
-        if (self.screen == UIScreen.mainScreen) {
-            if (previousTraitCollection.userInterfaceStyle != self.traitCollection.userInterfaceStyle) {
-                QIOSTheme::initializeSystemPalette();
-                QWindowSystemInterface::handleThemeChange<QWindowSystemInterface::SynchronousDelivery>(nullptr);
-            }
-        }
-    }
-}
-
-#endif
-
-@end
 
 // -------------------------------------------------------------------------
 

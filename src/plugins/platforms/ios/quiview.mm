@@ -46,6 +46,7 @@
 #include "qiosscreen.h"
 #include "qioswindow.h"
 #include "qiosinputcontext.h"
+#include "quiwindow.h"
 #ifndef Q_OS_TVOS
 #include "qiosmenu.h"
 #endif
