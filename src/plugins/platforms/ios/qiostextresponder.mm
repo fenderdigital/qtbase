@@ -264,6 +264,7 @@
 {
     self.inputView = 0;
     self.inputAccessoryView = 0;
+    [self.undoManager removeAllActions];
     delete m_configuredImeState;
 
     [super dealloc];
