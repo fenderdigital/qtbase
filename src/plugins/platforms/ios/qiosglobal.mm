@@ -41,6 +41,7 @@
 #include "qiosapplicationdelegate.h"
 #include "qiosviewcontroller.h"
 #include "qiosscreen.h"
+#include "quiwindow.h"
 
 #include <QtCore/private/qcore_mac_p.h>
 
@@ -49,6 +50,7 @@ QT_BEGIN_NAMESPACE
 Q_LOGGING_CATEGORY(lcQpaApplication, "qt.qpa.application");
 Q_LOGGING_CATEGORY(lcQpaInputMethods, "qt.qpa.input.methods");
 Q_LOGGING_CATEGORY(lcQpaWindow, "qt.qpa.window");
+Q_LOGGING_CATEGORY(lcQpaWindowScene, "qt.qpa.window.scene");
 
 bool isQtApplication()
 {
@@ -63,6 +65,15 @@ bool isQtApplication()
     // scope of our QWindows/UIViews.
     static bool isQt = ([qt_apple_sharedApplication().delegate isKindOfClass:[QIOSApplicationDelegate class]]);
     return isQt;
+}
+
+bool isRunningOnVisionOS()
+{
+    static bool result = []{
+        // This class is documented to only be available on visionOS
+        return NSClassFromString(@"UIWindowSceneGeometryPreferencesVision");
+    }();
+    return result;
 }
 
 #ifndef Q_OS_TVOS
@@ -121,6 +132,55 @@ int infoPlistValue(NSString* key, int defaultValue)
     return value ? [value intValue] : defaultValue;
 }
 
+UIWindow *presentationWindow(QWindow *window)
+{
+    UIWindow *uiWindow = window ? reinterpret_cast<UIView *>(window->winId()).window : nullptr;
+    if (!uiWindow) {
+        auto *scenes = [qt_apple_sharedApplication().connectedScenes allObjects];
+        if (scenes.count > 0) {
+            auto *windowScene = static_cast<UIWindowScene*>(scenes[0]);
+            uiWindow = windowScene.keyWindow;
+            if (!uiWindow && windowScene.windows.count)
+                uiWindow = windowScene.windows[0];
+        }
+    }
+    return uiWindow;
+}
+
+UIView *rootViewForScreen(const QPlatformScreen *screen)
+{
+    Q_ASSERT(screen);
+
+    const auto *iosScreen = static_cast<const QIOSScreen *>(screen);
+    for (UIScene *scene in [qt_apple_sharedApplication().connectedScenes allObjects]) {
+        if (![scene isKindOfClass:UIWindowScene.class])
+            continue;
+
+        auto *windowScene = static_cast<UIWindowScene*>(scene);
+
+#if !defined(Q_OS_VISIONOS)
+        if (windowScene.screen != iosScreen->uiScreen())
+            continue;
+#else
+        Q_UNUSED(iosScreen);
+#endif
+
+        UIWindow *uiWindow = qt_objc_cast<QUIWindow*>(windowScene.keyWindow);
+        if (!uiWindow) {
+            for (UIWindow *win in windowScene.windows) {
+                if (qt_objc_cast<QUIWindow*>(win)) {
+                    uiWindow = win;
+                    break;
+                }
+            }
+        }
+
+        return uiWindow.rootViewController.view;
+    }
+
+    return nullptr;
+}
+
 QT_END_NAMESPACE
 
 // -------------------------------------------------------------------------
@@ -155,7 +215,7 @@ QT_END_NAMESPACE
 
 @implementation UIResponder (QtFirstResponder)
 
-+ (id)currentFirstResponder
++ (id)qt_currentFirstResponder
 {
     if (qt_apple_isApplicationExtension()) {
         qWarning() << "can't get first responder in application extensions!";

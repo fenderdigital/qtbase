@@ -241,7 +241,7 @@
     if (UIView *accessoryView = static_cast<UIView *>(platformData.value(kImePlatformDataInputAccessoryView).value<void *>()))
         self.inputAccessoryView = [[[WrapperView alloc] initWithView:accessoryView] autorelease];
 
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     if (platformData.value(kImePlatformDataHideShortcutsBar).toBool()) {
         // According to the docs, leadingBarButtonGroups/trailingBarButtonGroups should be set to nil to hide the shortcuts bar.
         // However, starting with iOS 10, the API has been surrounded with NS_ASSUME_NONNULL, which contradicts this and causes
@@ -264,6 +264,7 @@
 {
     self.inputView = 0;
     self.inputAccessoryView = 0;
+    [self.undoManager removeAllActions];
     delete m_configuredImeState;
 
     [super dealloc];
@@ -309,7 +310,7 @@
 {
     FirstResponderCandidate firstResponderCandidate(self);
 
-    qImDebug() << "self:" << self << "first:" << [UIResponder currentFirstResponder];
+    qImDebug() << "self:" << self << "first:" << [UIResponder qt_currentFirstResponder];
 
     if (![super becomeFirstResponder]) {
         qImDebug() << self << "was not allowed to become first responder";
@@ -323,7 +324,7 @@
 
 - (BOOL)resignFirstResponder
 {
-    qImDebug() << "self:" << self << "first:" << [UIResponder currentFirstResponder];
+    qImDebug() << "self:" << self << "first:" << [UIResponder qt_currentFirstResponder];
 
     // Don't allow activation events of the window that we're doing text on behalf on
     // to steal responder.
@@ -341,11 +342,11 @@
     // a regular responder transfer to another window. In the former case, iOS
     // will set the new first-responder to our next-responder, and in the latter
     // case we'll have an active responder candidate.
-    if (![UIResponder currentFirstResponder] && !FirstResponderCandidate::currentCandidate()) {
+    if (![UIResponder qt_currentFirstResponder] && !FirstResponderCandidate::currentCandidate()) {
         // No first responder set anymore, sync this with Qt by clearing the
         // focus object.
         m_inputContext->clearCurrentFocusObject();
-    } else if ([UIResponder currentFirstResponder] == [self nextResponder]) {
+    } else if ([UIResponder qt_currentFirstResponder] == [self nextResponder]) {
         // We have resigned the keyboard, and transferred first responder back to the parent view
         Q_ASSERT(!FirstResponderCandidate::currentCandidate());
         if ([self currentImeState:Qt::ImEnabled].toBool()) {

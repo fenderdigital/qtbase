@@ -37,6 +37,9 @@
 **
 ****************************************************************************/
 
+#ifndef QIOSAPPLICATIONDELEGATE_H
+#define QIOSAPPLICATIONDELEGATE_H
+
 #import <UIKit/UIKit.h>
 #import <QtGui/QtGui>
 
@@ -44,3 +47,5 @@
 
 @interface QIOSApplicationDelegate : UIResponder <UIApplicationDelegate>
 @end
+
+#endif // QIOSAPPLICATIONDELEGATE_H

@@ -46,6 +46,7 @@
 #include "qiosscreen.h"
 #include "qioswindow.h"
 #include "qiosinputcontext.h"
+#include "quiwindow.h"
 #ifndef Q_OS_TVOS
 #include "qiosmenu.h"
 #endif
@@ -65,7 +66,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
 + (void)load
 {
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     if (QOperatingSystemVersion::current() < QOperatingSystemVersion(QOperatingSystemVersion::IOS, 11)) {
         // iOS 11 handles this though [UIView safeAreaInsetsDidChange], but there's no signal for
         // the corresponding top and bottom layout guides that we use on earlier versions. Note
@@ -85,7 +86,10 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
 + (Class)layerClass
 {
+#if QT_CONFIG(opengl)
     return [CAEAGLLayer class];
+#endif
+    return [super layerClass];
 }
 
 - (instancetype)initWithQIOSWindow:(QT_PREPEND_NAMESPACE(QIOSWindow) *)window
@@ -101,6 +105,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 - (instancetype)initWithFrame:(CGRect)frame
 {
     if ((self = [super initWithFrame:frame])) {
+#if QT_CONFIG(opengl)
         if ([self.layer isKindOfClass:[CAEAGLLayer class]]) {
             // Set up EAGL layer
             CAEAGLLayer *eaglLayer = static_cast<CAEAGLLayer *>(self.layer);
@@ -110,6 +115,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
                 kEAGLDrawablePropertyColorFormat: kEAGLColorFormatRGBA8
             };
         }
+#endif
 
         if (isQtApplication())
             self.hidden = YES;
@@ -169,6 +175,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
     return description;
 }
 
+#if !defined(Q_OS_VISIONOS)
 - (void)willMoveToWindow:(UIWindow *)newWindow
 {
     // UIKIt will normally set the scale factor of a view to match the corresponding
@@ -178,6 +185,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
     // FIXME: Allow the scale factor to be customized through QSurfaceFormat.
 }
+#endif
 
 - (void)didAddSubview:(UIView *)subview
 {
@@ -276,7 +284,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
         // blocked by this guard.
         FirstResponderCandidate firstResponderCandidate(self);
 
-        qImDebug() << "self:" << self << "first:" << [UIResponder currentFirstResponder];
+        qImDebug() << "self:" << self << "first:" << [UIResponder qt_currentFirstResponder];
 
         if (![super becomeFirstResponder]) {
             qImDebug() << self << "was not allowed to become first responder";
@@ -315,7 +323,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
 - (BOOL)resignFirstResponder
 {
-    qImDebug() << "self:" << self << "first:" << [UIResponder currentFirstResponder];
+    qImDebug() << "self:" << self << "first:" << [UIResponder qt_currentFirstResponder];
 
     if (![super resignFirstResponder])
         return NO;
@@ -338,7 +346,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
     if ([self isFirstResponder])
         return YES;
 
-    UIResponder *firstResponder = [UIResponder currentFirstResponder];
+    UIResponder *firstResponder = [UIResponder qt_currentFirstResponder];
     if ([firstResponder isKindOfClass:[QIOSTextInputResponder class]]
         && [firstResponder nextResponder] == self)
         return YES;
@@ -634,7 +642,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     // Check first if QIOSMenu should handle the action before continuing up the responder chain
     return [QIOSMenu::menuActionTarget() targetForAction:action withSender:sender] != 0;
 #else
@@ -647,7 +655,7 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
 - (id)forwardingTargetForSelector:(SEL)selector
 {
     Q_UNUSED(selector)
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     return QIOSMenu::menuActionTarget();
 #else
     return nil;
@@ -704,11 +712,6 @@ Q_LOGGING_CATEGORY(lcQpaTablet, "qt.qpa.input.tablet")
         return static_cast<QIOSViewController *>(vc);
 
     return nil;
-}
-
-- (UIEdgeInsets)qt_safeAreaInsets
-{
-    return self.safeAreaInsets;
 }
 
 @end

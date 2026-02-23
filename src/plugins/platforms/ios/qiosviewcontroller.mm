@@ -58,6 +58,7 @@
 // -------------------------------------------------------------------------
 
 @interface QIOSViewController ()
+@property (nonatomic, assign) UIWindow *window;
 @property (nonatomic, assign) QPointer<QT_PREPEND_NAMESPACE(QIOSScreen)> platformScreen;
 @property (nonatomic, assign) BOOL changingOrientation;
 @end
@@ -122,21 +123,21 @@
 {
     Q_UNUSED(subview);
 
-    QT_PREPEND_NAMESPACE(QIOSScreen) *screen = self.qtViewController.platformScreen;
-
-    // The 'window' property of our view is not valid until the window
-    // has been shown, so we have to access it through the QIOSScreen.
-    UIWindow *uiWindow = screen->uiWindow();
+    // Track UIWindow via explicit property on QIOSViewController,
+    // as the window property of our own view is not valid until
+    // the window has been shown (below).
+    UIWindow *uiWindow = self.qtViewController.window;
 
     if (uiWindow.hidden) {
-        // Associate UIWindow to screen and show it the first time a QWindow
-        // is mapped to the screen. For external screens this means disabling
-        // mirroring mode and presenting alternate content on the screen.
-        uiWindow.screen = screen->uiScreen();
+        // Show the UIWindow the first time a QWindow is mapped to the screen.
+        // For the main screen this hides the launch screen, while for external
+        // screens this disables mirroring of the main screen, so the external
+        // screen can be used for alternate content.
         uiWindow.hidden = NO;
     }
 }
 
+#if !defined(Q_OS_VISIONOS)
 - (void)willRemoveSubview:(UIView *)subview
 {
     Q_UNUSED(subview);
@@ -150,10 +151,10 @@
         // to ensure that we don't try to layout the view that's being removed.
         dispatch_async(dispatch_get_main_queue(), ^{
             uiWindow.hidden = YES;
-            uiWindow.screen = [UIScreen mainScreen];
         });
     }
 }
+#endif
 
 - (void)layoutSubviews
 {
@@ -259,9 +260,10 @@
 @synthesize preferredStatusBarStyle;
 #endif
 
-- (instancetype)initWithQIOSScreen:(QT_PREPEND_NAMESPACE(QIOSScreen) *)screen
+- (instancetype)initWithWindow:(UIWindow*)window andScreen:(QT_PREPEND_NAMESPACE(QIOSScreen) *)screen
 {
     if (self = [self init]) {
+        self.window = window;
         self.platformScreen = screen;
 
         self.changingOrientation = NO;
@@ -314,7 +316,7 @@
 
     Q_ASSERT(!qt_apple_isApplicationExtension());
 
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
     [center addObserver:self selector:@selector(willChangeStatusBarFrame:)
             name:UIApplicationWillChangeStatusBarFrameNotification
@@ -324,6 +326,15 @@
             name:UIApplicationDidChangeStatusBarOrientationNotification
             object:qt_apple_sharedApplication()];
 #endif
+
+    // Make sure any top level windows that have already been created
+    // for this screen are reparented into our desktop manager view.
+    for (auto *window : qGuiApp->topLevelWindows()) {
+        if (window->screen()->handle() != self.platformScreen)
+            continue;
+        if (auto *platformWindow = window->handle())
+            platformWindow->setParent(nullptr);
+    }
 }
 
 - (void)viewDidUnload
@@ -336,7 +347,7 @@
 
 - (BOOL)shouldAutorotate
 {
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     return self.platformScreen && self.platformScreen->uiScreen() == [UIScreen mainScreen] && !self.lockedOrientation;
 #else
     return NO;
@@ -368,6 +379,7 @@
     [super didRotateFromInterfaceOrientation:orientation];
 }
 
+#if !defined(Q_OS_VISIONOS)
 - (void)willChangeStatusBarFrame:(NSNotification*)notification
 {
     Q_UNUSED(notification);
@@ -395,6 +407,7 @@
         [self.view layoutIfNeeded];
     }];
 }
+#endif
 
 - (void)didChangeStatusBarOrientation:(NSNotification *)notification
 {
@@ -431,10 +444,12 @@
     if (!self.platformScreen || !self.platformScreen->screen())
         return;
 
+#if !defined(Q_OS_VISIONOS)
     // For now we only care about the main screen, as both the statusbar
     // visibility and orientation is only appropriate for the main screen.
     if (self.platformScreen->uiScreen() != [UIScreen mainScreen])
         return;
+#endif
 
     // Prevent recursion caused by updating the status bar appearance (position
     // or visibility), which in turn may cause a layout of our subviews, and
@@ -461,7 +476,7 @@
     // All decisions are based on the top level window
     focusWindow = qt_window_private(focusWindow)->topLevelWindow();
 
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
 
     // -------------- Status bar style and visbility ---------------
 

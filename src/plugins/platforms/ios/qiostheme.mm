@@ -53,10 +53,14 @@
 #include <UIKit/UIFont.h>
 #include <UIKit/UIInterface.h>
 
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
 #include "qiosmenu.h"
+#endif
+
+#if !defined(Q_OS_TVOS)
 #include "qiosfiledialog.h"
 #include "qiosmessagedialog.h"
+#include "quiwindow.h"
 #endif
 
 QT_BEGIN_NAMESPACE
@@ -111,23 +115,17 @@ const QPalette *QIOSTheme::palette(QPlatformTheme::Palette type) const
     return 0;
 }
 
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
 QPlatformMenuItem* QIOSTheme::createPlatformMenuItem() const
 {
-#ifdef Q_OS_TVOS
-    return 0;
-#else
-    return new QIOSMenuItem();
-#endif
+    return new QIOSMenuItem;
 }
 
 QPlatformMenu* QIOSTheme::createPlatformMenu() const
 {
-#ifdef Q_OS_TVOS
-    return 0;
-#else
-    return new QIOSMenu();
-#endif
+    return new QIOSMenu;
 }
+#endif
 
 bool QIOSTheme::usePlatformNativeDialog(QPlatformTheme::DialogType type) const
 {

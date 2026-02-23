@@ -47,7 +47,8 @@
 #include <QtCore/private/qfactoryloader_p.h>
 
 #include "qiosapplicationstate.h"
-#ifndef Q_OS_TVOS
+
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
 #include "qiostextinputoverlay.h"
 #endif
 
@@ -67,15 +68,21 @@ public:
     bool hasCapability(Capability cap) const override;
 
     QPlatformWindow *createPlatformWindow(QWindow *window) const override;
+    QPlatformWindow *createForeignWindow(QWindow *window, WId nativeHandle) const override;
     QPlatformBackingStore *createPlatformBackingStore(QWindow *window) const override;
 
+#if QT_CONFIG(opengl)
     QPlatformOpenGLContext *createPlatformOpenGLContext(QOpenGLContext *context) const override;
+#endif
+
     QPlatformOffscreenSurface *createPlatformOffscreenSurface(QOffscreenSurface *surface) const override;
 
     QPlatformFontDatabase *fontDatabase() const override;
-#ifndef QT_NO_CLIPBOARD
+
+#if QT_CONFIG(clipboard)
     QPlatformClipboard *clipboard() const override;
 #endif
+
     QPlatformInputContext *inputContext() const override;
     QPlatformServices *services() const override;
 
@@ -106,7 +113,7 @@ public:
 
 private:
     QPlatformFontDatabase *m_fontDatabase;
-#ifndef Q_OS_TVOS
+#if QT_CONFIG(clipboard)
     QPlatformClipboard *m_clipboard;
 #endif
     QPlatformInputContext *m_inputContext;
@@ -114,7 +121,7 @@ private:
     QIOSServices *m_platformServices;
     mutable QPlatformAccessibility *m_accessibility;
     QFactoryLoader *m_optionalPlugins;
-#ifndef Q_OS_TVOS
+#if !defined(Q_OS_TVOS) && !defined(Q_OS_VISIONOS)
     QIOSTextInputOverlay m_textInputOverlay;
 #endif
 };

@@ -44,8 +44,7 @@
 #include "qiosbackingstore.h"
 #include "qiosscreen.h"
 #include "qiosplatformaccessibility.h"
-#include "qioscontext.h"
-#ifndef Q_OS_TVOS
+#if QT_CONFIG(clipboard)
 #include "qiosclipboard.h"
 #endif
 #include "qiosinputcontext.h"
@@ -63,6 +62,10 @@
 #include <QDir>
 #include <QOperatingSystemVersion>
 
+#if QT_CONFIG(opengl)
+#include "qioscontext.h"
+#endif
+
 #import <AudioToolbox/AudioServices.h>
 
 #include <QtDebug>
@@ -78,7 +81,7 @@ QIOSIntegration *QIOSIntegration::instance()
 
 QIOSIntegration::QIOSIntegration()
     : m_fontDatabase(new QCoreTextFontDatabaseEngineFactory<QCoreTextFontEngine>)
-#if !defined(Q_OS_TVOS) && !defined(QT_NO_CLIPBOARD)
+#if QT_CONFIG(clipboard)
     , m_clipboard(new QIOSClipboard)
 #endif
     , m_inputContext(0)
@@ -99,6 +102,10 @@ QIOSIntegration::QIOSIntegration()
 
 void QIOSIntegration::initialize()
 {
+#if defined(Q_OS_VISIONOS)
+    // Qt requires a screen, so let's give it a dummy one
+    QWindowSystemInterface::handleScreenAdded(new QIOSScreen);
+#else
     UIScreen *mainScreen = [UIScreen mainScreen];
     NSMutableArray<UIScreen *> *screens = [[[UIScreen screens] mutableCopy] autorelease];
     if (![screens containsObject:mainScreen]) {
@@ -108,6 +115,7 @@ void QIOSIntegration::initialize()
 
     for (UIScreen *screen in screens)
         QWindowSystemInterface::handleScreenAdded(new QIOSScreen(screen));
+#endif
 
     // Depends on a primary screen being present
     m_inputContext = new QIOSInputContext;
@@ -115,8 +123,10 @@ void QIOSIntegration::initialize()
     m_touchDevice = new QTouchDevice;
     m_touchDevice->setType(QTouchDevice::TouchScreen);
     QTouchDevice::Capabilities touchCapabilities = QTouchDevice::Position | QTouchDevice::NormalizedPosition;
+#if !defined(Q_OS_VISIONOS)
     if (mainScreen.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable)
         touchCapabilities |= QTouchDevice::Pressure;
+#endif
     m_touchDevice->setCapabilities(touchCapabilities);
     QWindowSystemInterface::registerTouchDevice(m_touchDevice);
 #if QT_CONFIG(tabletevent)
@@ -133,7 +143,7 @@ QIOSIntegration::~QIOSIntegration()
     delete m_fontDatabase;
     m_fontDatabase = 0;
 
-#if !defined(Q_OS_TVOS) && !defined(QT_NO_CLIPBOARD)
+#if QT_CONFIG(clipboard)
     delete m_clipboard;
     m_clipboard = 0;
 #endif
@@ -158,11 +168,15 @@ QIOSIntegration::~QIOSIntegration()
 bool QIOSIntegration::hasCapability(Capability cap) const
 {
     switch (cap) {
+#if QT_CONFIG(opengl)
     case BufferQueueingOpenGL:
         return true;
     case OpenGL:
     case ThreadedOpenGL:
         return true;
+    case RasterGLSurface:
+        return true;
+#endif
     case ThreadedPixmaps:
         return true;
     case MultipleWindows:
@@ -171,7 +185,7 @@ bool QIOSIntegration::hasCapability(Capability cap) const
         return false;
     case ApplicationState:
         return true;
-    case RasterGLSurface:
+    case ForeignWindows:
         return true;
     default:
         return QPlatformIntegration::hasCapability(cap);
@@ -183,17 +197,24 @@ QPlatformWindow *QIOSIntegration::createPlatformWindow(QWindow *window) const
     return new QIOSWindow(window);
 }
 
+QPlatformWindow *QIOSIntegration::createForeignWindow(QWindow *window, WId nativeHandle) const
+{
+    return new QIOSWindow(window, nativeHandle);
+}
+
 // Used when the QWindow's surface type is set by the client to QSurface::RasterSurface
 QPlatformBackingStore *QIOSIntegration::createPlatformBackingStore(QWindow *window) const
 {
     return new QIOSBackingStore(window);
 }
 
+#if QT_CONFIG(opengl)
 // Used when the QWindow's surface type is set by the client to QSurface::OpenGLSurface
 QPlatformOpenGLContext *QIOSIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
     return new QIOSContext(context);
 }
+#endif
 
 class QIOSOffscreenSurface : public QPlatformOffscreenSurface
 {
@@ -223,14 +244,10 @@ QPlatformFontDatabase * QIOSIntegration::fontDatabase() const
     return m_fontDatabase;
 }
 
-#ifndef QT_NO_CLIPBOARD
+#if QT_CONFIG(clipboard)
 QPlatformClipboard *QIOSIntegration::clipboard() const
 {
-#ifndef Q_OS_TVOS
     return m_clipboard;
-#else
-    return QPlatformIntegration::clipboard();
-#endif
 }
 #endif
 

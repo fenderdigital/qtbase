@@ -27,6 +27,7 @@ OBJECTIVE_SOURCES = \
     qiosglobal.mm \
     qiosservices.mm \
     quiview.mm \
+    quiwindow.mm \
     quiaccessibilityelement.mm \
     qiosplatformaccessibility.mm \
     qiostextresponder.mm
@@ -46,6 +47,7 @@ HEADERS = \
     qiosglobal.h \
     qiosservices.h \
     quiview.h \
+    quiwindow.h \
     quiaccessibilityelement.h \
     qiosplatformaccessibility.h \
     qiostextresponder.h

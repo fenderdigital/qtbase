@@ -46,10 +46,6 @@
 
 @class QIOSOrientationListener;
 
-@interface QUIWindow : UIWindow
-@property (nonatomic, readonly) BOOL sendingEvent;
-@end
-
 QT_BEGIN_NAMESPACE
 
 class QIOSScreen : public QObject, public QPlatformScreen
@@ -57,7 +53,11 @@ class QIOSScreen : public QObject, public QPlatformScreen
     Q_OBJECT
 
 public:
+#if !defined(Q_OS_VISIONOS)
     QIOSScreen(UIScreen *screen);
+#else
+    QIOSScreen();
+#endif
     ~QIOSScreen();
 
     QString name() const override;
@@ -77,8 +77,9 @@ public:
 
     QPixmap grabWindow(WId window, int x, int y, int width, int height) const override;
 
+#if !defined(Q_OS_VISIONOS)
     UIScreen *uiScreen() const;
-    UIWindow *uiWindow() const;
+#endif
 
     void setUpdatesPaused(bool);
 
@@ -87,15 +88,18 @@ public:
 private:
     void deliverUpdateRequests() const;
 
-    UIScreen *m_uiScreen;
-    UIWindow *m_uiWindow;
+#if !defined(Q_OS_VISIONOS)
+    UIScreen *m_uiScreen = nullptr;
+#endif
     QRect m_geometry;
     QRect m_availableGeometry;
     int m_depth;
+#if !defined(Q_OS_VISIONOS)
     uint m_physicalDpi;
+#endif
     QSizeF m_physicalSize;
-    QIOSOrientationListener *m_orientationListener;
-    CADisplayLink *m_displayLink;
+    QIOSOrientationListener *m_orientationListener = nullptr;
+    CADisplayLink *m_displayLink = nullptr;
 };
 
 QT_END_NAMESPACE
